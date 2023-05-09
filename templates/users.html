@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>
+    <title>User Data</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/user.css') }}">
+  </head>
+  <body>
+    <table id="user-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>     </th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  
+    <div id="users_data" data-users="{{ users_data }}"></div>
+  
+    <script src="{{ url_for('static', filename='scripts/users.js') }}"></script>
+    
+
+  </body>
+  </html>

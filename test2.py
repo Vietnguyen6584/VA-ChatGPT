@@ -5,6 +5,7 @@ import os
 import re
 import json
 import time
+import csv
 from pathlib import Path
 from flask_cors import CORS, cross_origin
 from flask_socketio import join_room, emit, SocketIO, leave_room
@@ -94,22 +95,24 @@ def login():
 
         with open(USER_FILE, 'r') as f:
             for line in f:
-                stored_username, stored_password, stored_id = line.strip().split(':')
+                stored_id, stored_username, stored_email, stored_role, stored_password = line.strip().split(',')
                 if username == stored_username and password == stored_password:
                     session['logged_in'] = True
                     session['username'] = username
                     session['user_id'] = stored_id
-                    filename ='userAppData/' + stored_id + '.json'
-                    chatfile = open(filename, 'r+')
+                    session['email'] = stored_email
+                    session['role'] = stored_role
+                    filename = 'userAppData/' + stored_id + '.json'
+                    chatfile = open(filename, 'a+')
                     chatfile.close()
                     return redirect(url_for('home'))
-                    
 
         error = 'Invalid username or password'
         return render_template('login.html', error=error)
         
     else:
         return render_template('login.html')
+
     
 
 @app.route('/logout')
@@ -188,6 +191,79 @@ def get_id():
         print("redirect to login")
     print(session['username'])
     return jsonify({'id': session['user_id']})
+
+@app.route('/admin')
+def admin():
+    #print(session.get('role'))
+    if session.get('role') == '1':
+        return render_template('admin.html')
+    else:
+        return "Access denied"
+
+
+@app.route('/admin/users')
+def users():
+    if session.get('role') == '1':
+        with open(USER_FILE, 'r') as file:
+            lines = file.readlines()[1:]
+        # Parse data into list of dictionaries
+        users = []
+        for line in lines:
+            user_data = line.strip().split(',')
+            user = {
+                'id': user_data[0],
+                'username': user_data[1],
+                'email': user_data[2],
+                'role': user_data[3],
+                #'password': user_data[4]
+            }
+            users.append(user)
+        # Convert list of dictionaries to JSON
+        users_json = json.dumps(users)
+        #print(users_json)
+        # Render the template and pass the JSON data to it
+        return render_template('users.html', users_data=users_json)
+    else:
+        return "Access denied"
+
+
+
+@app.route('/auth/check')
+def check_auth():
+    if 'logged_in' in session and session['logged_in'] and 'role' in session and session['role'] == 1:
+        return {'authenticated': True, 'role': session['role'], 'username': session['username']}
+    else:
+        return {'authenticated': False}
+@app.route('/removeuser/<int:user_id>', methods=['DELETE'])
+def remove_user(user_id):
+    if session.get('role') == '1':
+        if user_id == session.get('user_id'): 
+            return "Can't delete the logged in account"
+        with open(USER_FILE, 'r') as file:
+            lines = file.readlines()
+        with open(USER_FILE, 'w') as file:
+            for line in lines:
+                if not line.startswith(str(user_id)):
+                    file.write(line)
+        return "User deleted successfully"
+    else:
+        return "Access denied"
+@app.route('/user/<int:user_id>')
+def user_profile(user_id):
+    if session.get('role') == '1':
+        with open(USER_FILE, 'r') as file:
+            lines = file.readlines()
+            for line in lines[1:]:
+                user_data = line.strip().split(',')
+                if int(user_data[0]) == user_id:
+                    user = {'id': user_data[0], 'username': user_data[1], 'email': user_data[2], 'role': user_data[3], 'password': user_data[4]}
+                    filename='userAppData/'+user_data[0]+'.json'
+                    chatlog = read_chatlog(filename)
+                    print(chatlog)
+                    return render_template('userprofile.html', user=user, session=session, chatlog=chatlog)
+            return "User not found"
+    else:
+        return "Access denied"
 
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)

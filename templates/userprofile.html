@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>User Profile</title>
+  </head>
+  <body>
+    <h1>User Profile</h1>
+    <div id="user" data-user="{{ user }}"></div>
+    {% if user %}
+    <div id="Showuser">
+        <span id="username">{{ user['username'] }}</span>,
+        <span id="Email">{{ user['email'] }}</span>,
+        <span id="Role">{{ user['role'] }}</span>,
+        <span id="password">{{ user['password'] }}</span>
+    </div>
+    {% else %}
+    <p>User not found</p>
+    {% endif %}
+
+    <div id="chatlog" data-chatlog="{{ chatlog }}"></div>
+    {% if chatlog %}
+    <div id="Showchatlog">
+        <h2>Chatlog</h2>
+        <pre>{{ chatlog }}</pre>
+    </div>
+    {% else %}
+    <p>No chatlog available</p>
+    {% endif %}
+
+  </body>
+</html>

@@ -10,19 +10,16 @@ body {
 }
 .container {
   --light-color: #fff;
-  height: 420px;
-  width: 350px;
+  height: 100%;
+  width: 100%;
   background: var(--light-color);
   position: fixed;
-  bottom: 50px;
-  right: 10px;
   box-shadow: 0px 0px 15px 0px black;
 }
 .chat-header {
   height: 60px;
   display: flex;
   align-items: center;
-  padding: 0px 30px;
   background-color: #0652c0;
   color: var(--light-color);
   font-size: 1.5rem;
@@ -41,7 +38,6 @@ body {
   padding-left: 10px;
 }
 .chat-body {
-  height: 300px;
   display: flex;
   flex-direction: column;
   padding: 8px 10px;

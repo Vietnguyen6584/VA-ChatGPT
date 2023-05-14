@@ -1,0 +1,60 @@
+import base64
+import os
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+
+
+def encrypt(message, key, timestamp):
+    # Encode the message and timestamp as bytes
+    message_bytes = message.encode('utf-8')
+    timestamp_bytes = str(timestamp).encode('utf-8')
+    
+    # Generate a random IV
+    iv = os.urandom(16)
+
+    # Pad the message to a multiple of 16 bytes
+    padded_message = message_bytes + b"\0" * (16 - len(message_bytes) % 16)
+
+    # Create a Cipher object using AES in CBC mode with the given key and IV
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+
+    # Encrypt the message using the Cipher object
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(padded_message) + encryptor.finalize()
+
+    # Concatenate the IV and ciphertext into a single message
+    encrypted_message = iv + ciphertext + timestamp_bytes
+
+    # Base64-encode the encrypted message and return it as a string
+    return base64.urlsafe_b64encode(encrypted_message).decode('utf-8')
+def decrypt(ciphertext, key):
+    # Decode the ciphertext from base64
+    encrypted_message = base64.urlsafe_b64decode(ciphertext.encode('utf-8'))
+
+    # Extract the IV, ciphertext, and timestamp from the encrypted message
+    iv = encrypted_message[:16]
+    ciphertext = encrypted_message[16:-8]
+    timestamp_bytes = encrypted_message[-8:]
+    timestamp = float(timestamp_bytes.decode('utf-8'))
+
+    # Create a Cipher object using AES in CBC mode with the given key and IV
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+
+    # Decrypt the message using the Cipher object
+    decryptor = cipher.decryptor()
+    padded_message = decryptor.update(ciphertext) + decryptor.finalize()
+
+    # Remove the padding from the decrypted message and return it as a string
+    message = padded_message.rstrip(b"\0").decode('utf-8')
+    return message, timestamp
+
+key = b'\xb0\xe0\x13\xcd\xa5Sl\xce\x8b\xd0\x84\x88\x00\x94\xd0\xdc\xbf=Y\xf4\xcb$`l\xdf\x90_\x81S\xfc\x9e\x0e'
+message = 'Hello, World!'
+timestamp = 1681585110.0567973
+
+encrypted = encrypt(message, key, timestamp)
+print('Encrypted:', encrypted)
+
+decrypted, decrypted_timestamp = decrypt(encrypted, key)
+print('Decrypted message:', decrypted)
+print('Timestamp:', decrypted_timestamp)

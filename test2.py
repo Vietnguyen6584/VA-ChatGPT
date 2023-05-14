@@ -9,6 +9,10 @@ import csv
 from pathlib import Path
 from flask_cors import CORS, cross_origin
 from flask_socketio import join_room, emit, SocketIO, leave_room
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
 
 
 app = Flask(__name__)
@@ -45,6 +49,7 @@ def connectuser(userid):
 @socketio.on('connect')
 def disconnectuser(userid):
     leave_room(session[userid])
+
 def sendMesssage(userid):
     emit('message', {'text': 'Hello, client!'}, room=session['user_id'])
 def check_faq(user_input):
@@ -61,6 +66,58 @@ def read_chatlog(filename):
         data.append(json.loads(line.strip()))
     
     return json.dumps(data)
+# Function to derive a key from a user-provided key string
+def derive_key(key_str, salt):
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000
+    )
+    key = kdf.derive(key_str.encode())
+    return key
+
+# Function to encrypt a message with a key
+def encrypt_message(message, key):
+    # Generate an initialization vector (IV)
+    iv = os.urandom(16)
+
+    # Create a cipher object with the AES algorithm and CBC mode
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+
+    # Create a padder object to pad the message to a multiple of 128 bits
+    padder = padding.PKCS7(128).padder()
+
+    # Pad the message
+    padded_message = padder.update(message.encode()) + padder.finalize()
+
+    # Encrypt the padded message
+    encryptor = cipher.encryptor()
+    encrypted_message = encryptor.update(padded_message) + encryptor.finalize()
+
+    # Return the IV and encrypted message
+    return iv + encrypted_message
+
+# Function to decrypt a message with a key
+def decrypt_message(encrypted_message, key):
+    # Extract the IV from the encrypted message
+    iv = encrypted_message[:16]
+
+    # Create a cipher object with the AES algorithm and CBC mode
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+
+    # Create an unpadder object to remove padding from the decrypted message
+    unpadder = padding.PKCS7(128).unpadder()
+
+    # Decrypt the message
+    decryptor = cipher.decryptor()
+    decrypted_message = decryptor.update(encrypted_message[16:]) + decryptor.finalize()
+
+    # Remove padding from the decrypted message
+    unpadded_message = unpadder.update(decrypted_message) + unpadder.finalize()
+
+    # Return the decrypted message as a string
+    return unpadded_message.decode()
 
 def generate_response(user_input):
     faq_answer = check_faq(user_input)
@@ -225,7 +282,12 @@ def users():
         return render_template('users.html', users_data=users_json)
     else:
         return "Access denied"
-
+@app.route('/input_key', methods=['GET', 'POST'])
+def input_key():
+    if request.method == 'POST':
+        session['userkey'] = request.form['userkey']
+        return redirect('/home')
+    return render_template('input_key.html')
 
 
 @app.route('/auth/check')

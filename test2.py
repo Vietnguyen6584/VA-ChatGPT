@@ -33,7 +33,7 @@ top_p = 1
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
+serverkey = b'\x1duQ,\x92m\\:\x80\xadCEZF\xf8\x85L\xbf\xaa\xacp\xa9`\xc5B\xa1\xceRhT\xf6O'
 USER_FILE = 'userAppData/user.txt'
 chatfile = open('userAppData/dump.json', 'w+')
 filename = 'userAppData/dump.json'
@@ -161,24 +161,22 @@ def decrypt_message(encrypted_message, key):
         print("Padding error:", str(e))
         return "Unknown message (Key error)"
     
+import cryptography
+from cryptography.fernet import Fernet
 
 def encrypt_file(file_path, key):
-    with open(file_path, 'rb') as file:
+    with open(file_path, 'r') as file:
         data = file.read()
-    encrypted_data = encrypt_message(data, key)
-    encrypted_file_path = file_path + '.encrypted'
-    with open(encrypted_file_path, 'wb') as encrypted_file:
+    encrypted_data = encrypt_message(data, key).hex()
+    with open(file_path, 'w') as encrypted_file:
         encrypted_file.write(encrypted_data)
-    return encrypted_file_path
+    return file_path
 
-def decrypt_file(encrypted_file_path, key):
-    with open(encrypted_file_path, 'rb') as encrypted_file:
+def decrypt_file(file_path, key):
+    with open(file_path, 'r') as encrypted_file:
         encrypted_data = encrypted_file.read()
-    decrypted_data = decrypt_message(encrypted_data, key)
-    decrypted_file_path = encrypted_file_path[:-10]  # Remove the '.encrypted' extension
-    with open(decrypted_file_path, 'wb') as decrypted_file:
-        decrypted_file.write(decrypted_data)
-    return decrypted_file_path
+    decrypted_data = decrypt_message(bytes.fromhex(encrypted_data), key)
+    return decrypted_data
 
 def generate_response(user_input):
     faq_answer = check_faq(user_input)
@@ -549,5 +547,8 @@ def edituser(user_id):
             file.writelines(lines)
         url = "http://localhost:5000/user/" + str(user_id)
         return redirect(url)
+    
+#encrypt_file(USER_FILE, serverkey)
+decrypt_file(USER_FILE, serverkey)
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)

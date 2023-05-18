@@ -1,0 +1,14 @@
+id,username,email,role,password
+0,admin,admin@example.com,1,admin
+1,John,john@example.com,2,123456
+2,Alice,alice@example.com,3,abc123
+3,Bob,bob@example.com,4,password1
+4,Sara,sara@example.com,1,secret123
+5,David,david@example.com,5,pass1234
+6,Emily,emily@example.com,2,hello123
+7,Michael,michael@example.com,3,letmein
+8,Jane,jane@example.com,4,password123
+9,Chris,chris@example.com,2,qwerty
+10,Oliver,oliver@example.com,5,admin123
+11,19127628,19127628@student.hcmus.edu.vn,3,123456
+12,nmv2001,nmv20112001@gmail.com,3,554

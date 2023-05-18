@@ -1,5 +1,5 @@
 id,username,email,role,password
-0,admin,admin@example.com,1,123456
+0,admin,admin@example.com,1,admin
 1,John,john@example.com,2,123456
 2,Alice,alice@example.com,3,abc123
 3,Bob,bob@example.com,4,password1

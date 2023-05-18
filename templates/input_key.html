@@ -2,12 +2,70 @@
 <html>
   <head>
     <title>Enter Your Key</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f1f1f1;
+      }
+
+      .container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+        color: #333333;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #555555;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #dddddd;
+        border-radius: 3px;
+      }
+
+      button[type="submit"] {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 16px;
+        color: #ffffff;
+        background-color: #4caf50;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+
+      h3 {
+        margin-top: 20px;
+        color: #777777;
+      }
+    </style>
   </head>
   <body>
-    <form method="POST">
-      <label for="userkey">Enter Your Key:</label>
-      <input type="text" name="userkey" id="userkey">
-      <button type="submit">Submit</button>
-    </form>
+    <div class="container">
+      <h1>Enter Your Key</h1>
+      <form method="POST">
+        <label for="userkey">Enter Your Key:</label>
+        <input type="text" name="userkey" id="userkey">
+        <button type="submit">Submit</button>
+      </form>
+      <h3>Warning: Users need to keep their own key to encrypt messages and display messages encrypted with that key.</h3>
+      <h3>Warning: We don't have access to the key the user used, so you should keep your key secured and safe.</h3>
+      <h3>User key can be any string of characters. We recommend a user key from 6 to 16 characters.</h3>
+    </div>
   </body>
 </html>

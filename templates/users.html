@@ -2,10 +2,26 @@
 <html>
   <head>
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous"> 
+
     <title>User Data</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/user.css') }}">
+    <style>
+        
+    </style>
   </head>
   <body>
+    <nav>
+      <ul>
+        <li><a href="http://localhost:5000/adminusers">User Data</a></li>
+        <li><a href="http://localhost:5000/datamanage">Data</a></li>
+      </ul>
+      <div class="nav-right">
+        <a id="display-username"></a>
+        <a href="http://localhost:5000/logout"><i class='fas fa-door-open'></i></a>
+      </div>
+    </nav>
+
     <table id="user-table">
       <thead>
         <tr>
@@ -19,11 +35,14 @@
       <tbody>
       </tbody>
     </table>
-  
-    <div id="users_data" data-users="{{ users_data }}"></div>
-  
-    <script src="{{ url_for('static', filename='scripts/users.js') }}"></script>
-    
 
+    <div id="users_data" data-users="{{ users_data }}"></div>
+    <div id="username" data-username="{{ username }}"></div>
+    <script src="{{ url_for('static', filename='scripts/users.js') }}"></script>
+    <script>
+      //get username from flask.
+      var username = document.getElementById("username").getAttribute("data-username");
+      document.getElementById("display-username").textContent = username;
+    </script>
   </body>
-  </html>
+</html>

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, redirect, url_for, render_template
+from flask import Flask, request, jsonify, session, redirect, url_for, render_template, make_response
 from flask_session import Session
 import requests
 import openai
@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import base64
 from cryptography.hazmat.primitives import padding
+from io import StringIO
 
 
 app = Flask(__name__)
@@ -36,7 +37,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 USER_FILE = 'userAppData/user.txt'
 chatfile = open('userAppData/dump.json', 'w+')
 filename = 'userAppData/dump.json'
-
+FAQfile = 'FAQ.csv'
 #salt use to generate key 
 salt = b'\xf8nHCf\xec\xf9V\x0c0\xf1\xc6 \xe5r '
 
@@ -46,7 +47,29 @@ faq = {
     "What payment methods do you accept?": "We accept ...",
     "Hello": "Hello, how will i help you ?",
 }
+def process_faq_to_json(faq):
+    processed_faq = []
+    for question, answer in faq.items():
+        processed_question = {"Q": question}
+        processed_answer = {"A": answer}
+        processed_faq.append({**processed_question, **processed_answer})
+    return json.dumps(processed_faq)
 
+def import_faq_data(filename):
+    faq_data = {}
+    with open(filename, 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            faq_data[row[0]] = row[1]
+    return faq_data
+
+def export_faq_data(filename, faq_data):
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        for question, answer in faq_data.items():
+            writer.writerow([question, answer])
+#export_faq_data(FAQfile, faq)
+faq = import_faq_data(FAQfile)
 @app.before_request
 def before_request():
     if 'userkey' in session:
@@ -137,6 +160,26 @@ def decrypt_message(encrypted_message, key):
         # Padding error occurred
         print("Padding error:", str(e))
         return "Unknown message (Key error)"
+    
+
+def encrypt_file(file_path, key):
+    with open(file_path, 'rb') as file:
+        data = file.read()
+    encrypted_data = encrypt_message(data, key)
+    encrypted_file_path = file_path + '.encrypted'
+    with open(encrypted_file_path, 'wb') as encrypted_file:
+        encrypted_file.write(encrypted_data)
+    return encrypted_file_path
+
+def decrypt_file(encrypted_file_path, key):
+    with open(encrypted_file_path, 'rb') as encrypted_file:
+        encrypted_data = encrypted_file.read()
+    decrypted_data = decrypt_message(encrypted_data, key)
+    decrypted_file_path = encrypted_file_path[:-10]  # Remove the '.encrypted' extension
+    with open(decrypted_file_path, 'wb') as decrypted_file:
+        decrypted_file.write(decrypted_data)
+    return decrypted_file_path
+
 def generate_response(user_input):
     faq_answer = check_faq(user_input)
     if faq_answer:
@@ -210,6 +253,7 @@ def login():
                     session['user_id'] = stored_id
                     session['email'] = stored_email
                     session['role'] = stored_role
+                    session['decodekey'] = "123"
                     filename = 'userAppData/' + stored_id + '.json'
                     chatfile = open(filename, 'a+')
                     chatfile.close()
@@ -264,7 +308,7 @@ def home():
 @app.route("/ask",  methods=['GET', 'POST'])
 @cross_origin(supports_credentials=True)
 def ask():
-    
+    print(faq)
     user_message = request.json.get('userInput')
     user_id = request.json.get('user_id')
     if user_id == None:
@@ -327,9 +371,58 @@ def get_id():
 def admin():
     print(session)
     if session.get('role') == '1':
-        return render_template('admin.html')
+        return redirect('/adminusers')
     else:
         return "Access denied"
+
+@app.route('/datamanage')
+def datamanage():
+    if session.get('role') == '1':
+        faq_json = process_faq_to_json(faq)
+        return render_template('dataM.html', faq = faq_json)
+    else:
+        return "Access denied"
+
+
+@app.route('/importfaq', methods=['POST'])
+def import_faq():
+    # Check if a file was uploaded
+    if 'faqFile' not in request.files:
+        return 'No file uploaded'
+
+    file = request.files['faqFile']
+
+    # Check if the file is CSV format
+    if not file.filename.endswith('.csv'):
+        return 'Invalid file format'
+
+    # Read and process the CSV data
+    faq_data = {}
+    reader = csv.reader(file.stream.read().decode("UTF8").splitlines())
+    for row in reader:
+        if len(row) == 2:
+            faq_data[row[0]] = row[1]
+    faq.update(faq_data)
+    export_faq_data(FAQfile, faq_data)
+    # Do something with the imported FAQ data
+    # For example, you can store it in a database or update an existing FAQ dictionary
+
+    return redirect('/datamanage')
+
+@app.route('/exportfaq')
+def export_faq():
+    # Create a string buffer to store the CSV data
+    csv_data = StringIO()
+    writer = csv.writer(csv_data)
+    for key, value in faq.items():
+        writer.writerow([key, value])
+    
+    # Create a response with the CSV data and headers for file download
+    response = make_response(csv_data.getvalue())
+    response.headers['Content-Disposition'] = 'attachment; filename=faq_data.csv'
+    response.headers['Content-Type'] = 'text/csv'
+    
+    return response
 
 
 @app.route('/adminusers')
@@ -354,7 +447,7 @@ def adminusers():
         users_json = json.dumps(users)
         #print(users_json)
         # Render the template and pass the JSON data to it
-        return render_template('users.html', users_data=users_json)
+        return render_template('users.html', users_data=users_json, username=session['username'])
     else:
         return "Access denied"
 
@@ -368,6 +461,19 @@ def input_key():
 @app.route('/key', methods=['GET', 'POST'])
 def key():
     return None
+
+@app.route('/decode', methods=['GET', 'POST'])
+def decode():
+    if request.method == 'POST':
+        print(request.form)
+        session['decodekey'] = request.form['key']
+        if request.form['userId']!=None:
+            url = "http://localhost:5000/user/" + request.form['userId']
+        else:
+            url = "http://localhost:5000/adminusers"
+        return redirect(url)    
+    return redirect('/admin')
+
 
 @app.route('/savemessage', methods=['GET', 'POST'])
 def savemessage():
@@ -403,12 +509,45 @@ def user_profile(user_id):
                 if int(user_data[0]) == user_id:
                     user = {'id': user_data[0], 'username': user_data[1], 'email': user_data[2], 'role': user_data[3], 'password': user_data[4]}
                     filename='userAppData/'+user_data[0]+'.json'
-                    chatlog = read_chatlog(filename)
+                    key = session['decodekey']
+                    print(key)
+                    key = derive_key(key, salt)
+                    chatlog = read_chatlog(filename, key)
                     print(chatlog)
                     return render_template('userprofile.html', user=user, session=session, chatlog=chatlog)
             return "User not found"
     else:
         return "Access denied"
+@app.route('/edituser/<int:user_id>', methods=['GET', 'POST'])
+def edituser(user_id):
+    if request.method == 'POST':
+        # Read the existing user data from the file
+        with open(USER_FILE, 'r') as file:
+            lines = file.readlines()
 
+        # Extract the edited user information from the form data
+        edited_user_data = {
+            'id': str(user_id),
+            'username': request.form['username'],
+            'email': request.form['email'],
+            'role': request.form['role'],
+            'password': request.form['password']
+        }
+
+        # Check if the edited user email or username already exists
+        for line in lines[1:]:
+            existing_user_data = line.strip().split(',')
+            if (existing_user_data[1] == edited_user_data['username'] or
+                    existing_user_data[2] == edited_user_data['email']) and existing_user_data[0] != edited_user_data['id']:
+                return "Error: Email or username already exists"
+
+        # Update the user data in memory
+        lines[user_id + 1] = f"{edited_user_data['id']},{edited_user_data['username']},{edited_user_data['email']},{edited_user_data['role']},{edited_user_data['password']}\n"
+
+        # Write the updated user data back to the file
+        with open(USER_FILE, 'w') as file:
+            file.writelines(lines)
+        url = "http://localhost:5000/user/" + str(user_id)
+        return redirect(url)
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)

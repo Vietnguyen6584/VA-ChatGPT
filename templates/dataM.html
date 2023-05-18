@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VA data</title>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous"> 
+
+  <style>
+    /* Existing styles */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f1f1f1;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #0652c0;
+      margin-top: 30px;
+    }
+
+    #display-faq {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #ffffff;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 30px;
+    }
+
+    label {
+      color: #0652c0;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    input[type="file"] {
+      width: 300px;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    input[type="submit"] {
+      padding: 10px 20px;
+      background-color: #0652c0;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #0652c0;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    /* New styles */
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 20px;
+    }
+
+    .question {
+      color: #ff7f50;
+      font-weight: bold;
+    }
+
+    .answer {
+      color: #008080;
+      margin-top: 10px;
+    }
+    /* CSS styles for the navigation bar */
+    nav {
+        background-color: #0652c0;
+        padding: 5px 0;
+        margin: 0;
+        overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        height: 40px; /* Adjust the height as needed */
+        color: white;
+    }
+
+  nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  nav li {
+    display: inline-block;
+    margin-right: 20px;
+    margin-left: 20px ;
+  }
+
+  nav li a {
+    display: block;
+    padding: 10px;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+  }
+
+  nav li:not(:last-child) a {
+    border-right: 1px solid transparent;
+  }
+
+  nav li a:hover {
+    background-color: #3d78da;
+    border-radius: 5px;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    margin-right: 20px;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    margin-right: 20px;
+    padding-right: 0; /* Reduce the right padding */
+    color: white;
+  }
+  .nav-right a:hover {
+    background-color: #3d78da;
+    border-radius: 5px;
+  }
+
+  </style>
+    <script>
+    window.addEventListener("DOMContentLoaded", function() {
+      var faq = document.getElementById("faq").getAttribute("data-faq");
+      var faqArray = JSON.parse(faq);
+
+      var displayFaqContainer = document.getElementById("display-faq");
+
+      var displayFaqHTML = '<h2>FAQ</h2>';
+      displayFaqHTML += '<ul>';
+      for (var i = 0; i < faqArray.length; i++) {
+        displayFaqHTML += '<li><span class="question">Q: </span>' + faqArray[i]["Q"] + '<br><span class="answer">A: </span>' + faqArray[i]["A"] + '</li>';
+      }
+      displayFaqHTML += '</ul>';
+      displayFaqContainer.innerHTML = displayFaqHTML;
+    });
+  </script>
+</head>
+<body>
+    <nav>
+        <ul>
+          <li><a href="http://localhost:5000/adminusers">User Data</a></li>
+          <li><a href="http://localhost:5000/datamanage">Data</a></li>
+        </ul>
+        <div class="nav-right">
+          <a id="display-username"></a>
+          <a href="http://localhost:5000/logout"><i class='fas fa-door-open'></i></a>
+        </div>
+      </nav>
+      <div id="username" data-username="{{ username }}"></div>
+      <script>
+        //get username from flask.
+        var username = document.getElementById("username").getAttribute("data-username");
+        document.getElementById("display-username").textContent = username;
+      </script>
+
+    <h1>FAQ</h1>
+    <div id="display-faq"></div>
+    <h1>Import FAQ</h1>
+    <form action="/importfaq" method="post" enctype="multipart/form-data">
+    <label for="file">Select a CSV file:</label>
+    <input type="file" id="file" name="file" accept=".csv">
+    <input type="submit" value="Import">
+    </form>
+    <a href="http://localhost:5000/exportfaq" target="_blank">
+    <button>Export FAQ</button>
+    </a>
+
+    <div id="faq" data-faq="{{ faq }}"></div>
+</body>
+</html>

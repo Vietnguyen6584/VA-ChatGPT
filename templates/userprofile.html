@@ -2,30 +2,384 @@
 <html>
   <head>
     <title>User Profile</title>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous"> 
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f1f1f1;
+      }
+
+      h1 {
+        text-align: center;
+        color: #0652c0;
+        margin-top: 30px;
+      }
+
+      #userContainer {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        margin-top: 30px;
+      }
+
+      #Showuser {
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 20px;
+        margin-right: 20px;
+        width: 300px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      #Showuser .row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      #Showuser .label {
+        color: #0652c0;
+        font-weight: bold;
+        flex-basis: 100px;
+        flex-shrink: 0;
+      }
+
+      #Showuser .value {
+        color: black;
+        flex-grow: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #editForm {
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      #editForm input {
+        margin-bottom: 10px;
+        width: 100%;
+      }
+
+      #editForm button {
+        padding: 10px 20px;
+        background-color: #0652c0;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      #editButton {
+        background-color: #0652c0;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+        margin-left: 10px;
+      }
+
+      #chatlogContainer {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+      }
+
+      #Showchatlog {
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 20px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      #Showchatlog h2 {
+        color: #0652c0;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      #Showchatlog pre {
+        white-space: pre-wrap;
+        font-family: Courier, monospace;
+      }
+
+      p {
+        text-align: center;
+        color: #888;
+        margin-top: 20px;
+      }
+      .chatlog-list {
+    list-style: none;
+    padding: 0; 
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .chatlog-item {
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .chatlog-sender {
+    font-weight: bold;
+    color: #0652c0;
+  }
+
+  .chatlog-text {
+    margin-left: 5px;
+  }
+
+  .chatlog-timestamp {
+    color: #888;
+    font-size: 12px;
+  }
+  .chatlog-heading {
+  text-align: center;
+  color: #0652c0; /* Replace with the desired color */
+  margin-top: 20px; /* Adjust the margin as needed */
+  }
+  #keyForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+        }
+        
+        .form-label {
+            color: #0652c0;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .form-input {
+            width: 300px;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        
+        .form-submit {
+            padding: 10px 20px;
+            background-color: #0652c0;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        /* CSS styles for the navigation bar */
+nav {
+  background-color: #0652c0;
+  padding: 10px 0;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+}
+
+nav ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+nav li {
+  display: inline-block;
+  margin-right: 20px;
+  margin-left: 20px ;
+}
+
+nav li a {
+  display: block;
+  padding: 10px;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+nav li:not(:last-child) a {
+  border-right: 1px solid transparent;
+}
+
+nav li a:hover {
+  background-color: #3d78da;
+  border-radius: 5px;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+}
+
+.nav-right a {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.nav-right a:hover {
+  background-color: #3d78da;
+  border-radius: 5px;
+}
+
+    </style>
+    <script>
+      function toggleEditForm() {
+        var editForm = document.getElementById("editForm");
+        var editButton = document.getElementById("editButton");
+
+        if (editForm.style.display === "none") {
+          editForm.style.display = "block";
+          editButton.textContent = "Cancel";
+        } else {
+          editForm.style.display = "none";
+          editButton.textContent = "Edit";
+        }
+      }
+      function submitForm() {
+            var userId = {{ user['id'] }};
+            document.getElementById('userIdInput').value = userId;
+            document.getElementById('keyForm').submit();
+        }
+      function handleKeyPress(event) {
+          if (event.keyCode === 13) {
+              event.preventDefault();
+              submitForm();
+          }
+      } 
+    </script>
   </head>
   <body>
-    <h1>User Profile</h1>
-    <div id="user" data-user="{{ user }}"></div>
-    {% if user %}
-    <div id="Showuser">
-        <span id="username">{{ user['username'] }}</span>,
-        <span id="Email">{{ user['email'] }}</span>,
-        <span id="Role">{{ user['role'] }}</span>,
-        <span id="password">{{ user['password'] }}</span>
-    </div>
-    {% else %}
-    <p>User not found</p>
-    {% endif %}
+      
+    <nav>
+      <ul>
+        <li><a href="http://localhost:5000/adminusers">User Data</a></li>
+        <li><a href="http://localhost:5000/datamanage">Data</a></li>
+      </ul>
+      <div class="nav-right">
+        <a id="display-username"></a>
+        <a href="http://localhost:5000/logout"><i class='fas fa-door-open'></i></a>
+      </div>
+    </nav>
+    <div id="username" data-username="{{ username }}"></div>
+    <script>
+      //get username from flask.
+      var username = document.getElementById("username").getAttribute("data-username");
+      document.getElementById("display-username").textContent = username;
+    </script>
 
-    <div id="chatlog" data-chatlog="{{ chatlog }}"></div>
-    {% if chatlog %}
-    <div id="Showchatlog">
-        <h2>Chatlog</h2>
-        <pre>{{ chatlog }}</pre>
+    <h1>User Profile</h1>
+    <div id="userContainer">
+      <div id="Showuser">
+        {% if user %}
+        <div class="row">
+          <span class="label">Username:</span>
+          <span class="value" id="username">{{ user['username'] }}</span>
+        </div>
+        <div class="row">
+          <span class="label">Email:</span>
+          <span class="value" id="Email">{{ user['email'] }}</span>
+        </div>
+        <div class="row">
+          <span class="label">Role:</span>
+          <span class="value" id="Role">{{ user['role'] }}</span>
+        </div>
+        <div class="row">
+          <span class="label">Password:</span>
+          <span class="value" id="password">{{ user['password'] }}</span>
+        </div>
+        <button id="editButton" onclick="toggleEditForm()">Edit</button>
+        {% else %}
+        <p>User not found</p>
+        {% endif %}
+      </div>
+      <div id="editForm" style="display: none;">
+        <form action="http://localhost:5000/edituser/{{ user['id'] }}" method="post">
+          <div class="row">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" placeholder="New Username" required>
+          </div>
+          <div class="row">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="New Email" required>
+          </div>
+          <div class="row">
+            <label for="role">Role:</label>
+            <input type="text" id="role" name="role" placeholder="New Role" required>
+          </div>
+          <div class="row">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="New Password" required>
+          </div>
+          <div class="row">
+            <button type="submit">Save</button>
+            <button type="button" onclick="toggleEditForm()">Cancel</button>
+          </div>
+        </form>
+      </div>
     </div>
-    {% else %}
-    <p>No chatlog available</p>
-    {% endif %}
+  <h2 class="chatlog-heading">Chatlog</h2>
+
+  <form id="keyForm" action="http://localhost:5000/decode" method="post">
+    <label class="form-label" for="key">Key:</label>
+    <input class="form-input" type="text" id="key" name="key" placeholder="Enter key" required>
+
+    <input type="hidden" id="userIdInput" name="userId">
+    
+    <button class="form-submit" type="button" onclick="submitForm()">Submit</button>
+  </form>
+  <div id="chatlog" data-chatlog="{{ chatlog }}"></div>
+  <div id="chatlogContainer"></div>
+  
+  <script>  
+    var userid = {{ user['id'] }}
+    var chatlog = document.getElementById("chatlog").getAttribute("data-chatlog");
+    var chatlogString = JSON.parse(chatlog);
+    console.log(chatlog);
+  
+    // Access the HTML element
+    var chatlogContainer = document.getElementById('chatlogContainer');
+  
+    // Display the chatlog
+    if (chatlogString.length > 0) {
+      var chatlogHTML = '<h2 class="chatlog-heading"></h2>';
+      chatlogHTML += '<ul class="chatlog-list">';
+      for (var i = 0; i < chatlogString.length; i++) {
+        chatlogHTML += '<li class="chatlog-item">';
+        chatlogHTML += '<span class="chatlog-sender">' + chatlogString[i].sender + '</span><br>';
+        chatlogHTML += '<span class="chatlog-text">' + chatlogString[i].text + '</span><br>';
+        chatlogHTML += '<span class="chatlog-timestamp">' + chatlogString[i].timestamp + '</span>';
+        chatlogHTML += '</li>';
+      }
+      chatlogHTML += '</ul>';
+      chatlogContainer.innerHTML = chatlogHTML;
+    } else {
+      chatlogContainer.innerHTML = '<p>No chatlog available</p>';
+    }
+  </script>
+  
+    
+  
+
 
   </body>
 </html>

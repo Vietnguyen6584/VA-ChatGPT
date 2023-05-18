@@ -10,6 +10,7 @@
 body {
   background: transparent;
   height: 100vh; /* set body height to full viewport height */
+  
 }
 
 .container {
@@ -95,18 +96,24 @@ body {
   width: 100%;
 }
 
-.chatbot-message,
+
 .user-message {
   padding: 8px;
-  background: #ccc;
+ 
+  background: #0652c0;
+  color: var(--light-color);
   margin: 5px;
   width: max-content;
+  max-width: 70%;
   border-radius: 10px 3px 10px 10px;
 }
 
 .chatbot-message {
-  background: #0652c0;
-  color: var(--light-color);
+  padding: 8px;
+  margin: 5px;
+  background: #ccc;
+  width: max-content;
+  max-width: 70%;
   align-self: flex-start;
   border-radius: 10px 10px 3px 10px;
 }

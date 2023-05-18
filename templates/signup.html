@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/signup.css') }}">
+    <script>
+        function validatePassword() {
+            var password = document.getElementById("password").value;
+            var confirmPassword = document.getElementById("confirmPassword").value;
+            var error = document.getElementById("error");
+
+            if (password !== confirmPassword) {
+                error.innerHTML = "Passwords do not match";
+                return false;
+            } else {
+                error.innerHTML = "";
+                return true;
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Sign Up</h2>
+        {% if error %}
+        <p style="color: red;">{{ error }}</p>
+        {% endif %}
+        <form method="POST" action="/signup" onsubmit="return validatePassword();">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required><br><br>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required><br><br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required><br><br>
+            <label for="confirmPassword">Confirm Password:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required><br>
+            <span id="error" style="color: red;"></span><br><br>
+            <input type="submit" value="Sign Up">
+        </form>
+        <div>
+            <p>Already have an account? <a href="http://localhost:5000/login">Log in</a></p>
+        </div>
+    </div>
+</body>
+</html>

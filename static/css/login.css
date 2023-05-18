@@ -1,0 +1,75 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Set a default font and text color */
+body {
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+/* Header styles */
+h1 {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Form styles */
+form {
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #f2f2f2;
+    border-radius: 5px;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+input[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    background-color: #4caf50;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+input[type="submit"]:hover {
+    background-color: #45a049;
+}
+
+.error-message {
+    color: red;
+    margin-top: 10px;
+}
+
+.signup-link {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.signup-link a {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+}
+
+.signup-link a:hover {
+    color: #000;
+}

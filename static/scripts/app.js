@@ -6,7 +6,7 @@ window.addEventListener('load', function() {
   var chatlogRaw = chatlogEl.getAttribute("data-chatlog");
   var chatlogJson = JSON.parse(chatlogRaw);
   for (var i = 0; i < chatlogJson.length; i++) {
-    var message = chatlogJson[i][0];
+    var message = chatlogJson[i];
     console.log("Sender: " + message.sender);
     console.log("Text: " + message.text);
 

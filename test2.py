@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, session, redirect, url_for, render_template
 from flask_session import Session
+import requests
 import openai
 import os
 import re
@@ -12,6 +13,7 @@ from flask_socketio import join_room, emit, SocketIO, leave_room
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+import base64
 from cryptography.hazmat.primitives import padding
 
 
@@ -29,9 +31,15 @@ temperature = 0.5
 top_p = 1
 
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+
 USER_FILE = 'userAppData/user.txt'
 chatfile = open('userAppData/dump.json', 'w+')
 filename = 'userAppData/dump.json'
+
+#salt use to generate key 
+salt = b'\xf8nHCf\xec\xf9V\x0c0\xf1\xc6 \xe5r '
+
 faq = {
     "What is your return policy?": "Our return policy is ...",
     "How long does shipping take?": "Shipping usually takes ...",
@@ -41,31 +49,37 @@ faq = {
 
 @app.before_request
 def before_request():
-    if request.path == '/sendToUser': print()
+    if 'userkey' in session:
+        print("session key:"+session['userkey'])
+    else: 
+        print("Session key not foundaaaaaaa")
 
-@socketio.on('connect')
-def connectuser(userid):
-    join_room(session[userid])
-@socketio.on('connect')
-def disconnectuser(userid):
-    leave_room(session[userid])
-
-def sendMesssage(userid):
-    emit('message', {'text': 'Hello, client!'}, room=session['user_id'])
 def check_faq(user_input):
     for question, answer in faq.items():
         if re.search(question, user_input, re.IGNORECASE):
             return answer
     return None
-def read_chatlog(filename):
+import ast
+
+def read_chatlog(filename, userkey):
     with open(filename, 'r') as f:
         lines = f.readlines()
-    
+
     data = []
     for line in lines:
-        data.append(json.loads(line.strip()))
-    
+        message_list = json.loads(line.strip())
+
+        # Iterate over each message in the list
+        for message in message_list:
+            encrypted_text = message['text']
+            decrypted_text = decrypt_message(bytes.fromhex(encrypted_text), userkey)
+            message['text'] = decrypted_text
+            data.append(message)
+
     return json.dumps(data)
+
+
+
 # Function to derive a key from a user-provided key string
 def derive_key(key_str, salt):
     kdf = PBKDF2HMAC(
@@ -100,25 +114,29 @@ def encrypt_message(message, key):
 
 # Function to decrypt a message with a key
 def decrypt_message(encrypted_message, key):
-    # Extract the IV from the encrypted message
-    iv = encrypted_message[:16]
+    try:
+        # Extract the IV from the encrypted message
+        iv = encrypted_message[:16]
 
-    # Create a cipher object with the AES algorithm and CBC mode
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+        # Create a cipher object with the AES algorithm and CBC mode
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
 
-    # Create an unpadder object to remove padding from the decrypted message
-    unpadder = padding.PKCS7(128).unpadder()
+        # Create an unpadder object to remove padding from the decrypted message
+        unpadder = padding.PKCS7(128).unpadder()
 
-    # Decrypt the message
-    decryptor = cipher.decryptor()
-    decrypted_message = decryptor.update(encrypted_message[16:]) + decryptor.finalize()
+        # Decrypt the message
+        decryptor = cipher.decryptor()
+        decrypted_message = decryptor.update(encrypted_message[16:]) + decryptor.finalize()
 
-    # Remove padding from the decrypted message
-    unpadded_message = unpadder.update(decrypted_message) + unpadder.finalize()
+        # Remove padding from the decrypted message
+        unpadded_message = unpadder.update(decrypted_message) + unpadder.finalize()
 
-    # Return the decrypted message as a string
-    return unpadded_message.decode()
-
+        # Return the decrypted message as a string
+        return unpadded_message.decode()
+    except ValueError as e:
+        # Padding error occurred
+        print("Padding error:", str(e))
+        return "Unknown message (Key error)"
 def generate_response(user_input):
     faq_answer = check_faq(user_input)
     if faq_answer:
@@ -142,6 +160,39 @@ def index():
         return redirect(url_for('home'))
     else:
         return redirect(url_for('login'))
+
+@app.route('/signup', methods=['GET', 'POST'])
+@cross_origin(supports_credentials=True)
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+
+        with open(USER_FILE, 'r') as f:
+            lines = f.readlines()
+            for line in lines[1:]:  # Skip the header line
+                stored_id, stored_username, stored_email, stored_role, stored_password = line.strip().split(',')
+                if username == stored_username:
+                    error = 'Username already exists'
+                    return render_template('signup.html', error=error)
+                if email == stored_email:
+                    error = 'Email already exists'
+                    return render_template('signup.html', error=error)
+
+        # Append user data to the file
+        with open(USER_FILE, 'a') as f:
+            user_id = len(lines) - 1  # Number of lines excluding the header
+            role = 3
+            new_user = f"\n{user_id},{username},{email},{role},{password}"
+            f.write(new_user)
+
+        return redirect(url_for('login'))
+
+    else:
+        return render_template('signup.html')
+
+
 
 @app.route('/login', methods=['GET', 'POST'])
 @cross_origin(supports_credentials=True)
@@ -186,53 +237,76 @@ def home():
     if 'logged_in' not in session:
         return redirect(url_for('login'))
     #print('home')
+    if 'userkey' in session:
+        print("session key:"+session['userkey'])
+        keyfilename = 'userAppData/userkey/' + session['user_id'] + '.key'
+        print(keyfilename)
+        with open(keyfilename, 'w') as file:
+            ekey = derive_key(session['userkey'], salt)
+            ekey = base64.b64encode(ekey).decode('utf-8')
+            print("ekey:" +ekey)
+            file.write(ekey)
+            ekey = base64.b64decode(ekey)
+            
+        file.close()
+    else: 
+        print("Session key not found")
+        return redirect('/input_key')
     print(session)
     filename ='userAppData/' + session['user_id'] + '.json'
-    chatlog = read_chatlog(filename)
-    #print(chatlog)    
+    chatlog = read_chatlog(filename, ekey)
+    print(chatlog)    
     #print(filename)
     #print(type(chatlog))
     return render_template('home.html', chatlog=chatlog, username=session['username'], user_id=session['user_id'])
 
 
-@app.route("/ask", methods=["POST"])
+@app.route("/ask",  methods=['GET', 'POST'])
 @cross_origin(supports_credentials=True)
-
 def ask():
     
     user_message = request.json.get('userInput')
     user_id = request.json.get('user_id')
-    #print(session)
-    filename ='userAppData/' + user_id + '.json'
+    if user_id == None:
+        filename = 'userAppData/dump.json'
+    else:
+        filename ='userAppData/' + user_id + '.json'
+    print(session)
+
+    #keyfile part
+    keyfilename = 'userAppData/userkey/' + str(user_id) + '.key'
+    with open(keyfilename, 'r') as file:
+        userkey = ekey = base64.b64decode(file.readline().strip())
+    file.close()
+    print("userkey:")
+    print(userkey)
+
     print("saving to")
     print(filename)
     print(user_message)
-    
     msg = [
         {
         "sender": "user",
-        "text": user_message,
+        "text": encrypt_message(user_message, userkey).hex(),
         "timestamp": time.time()
         },
     ]
-    
-    
+    response = generate_response(user_message)
     json_string = json.dumps(msg)
     with open(filename, mode="a") as f:
         f.write(json_string)
         f.write('\n')
         f.close()
-    response = generate_response(user_message)
     
     response_text = response
-    
     msg = [
         {
         "sender": "va",
-        "text": response_text,
+        "text": encrypt_message(response_text, userkey).hex(),
         "timestamp": time.time()
         },
     ]
+    print(msg)
     json_string = json.dumps(msg)
     with open(filename, 'a') as f:
         f.write(json_string)
@@ -251,15 +325,16 @@ def get_id():
 
 @app.route('/admin')
 def admin():
-    #print(session.get('role'))
+    print(session)
     if session.get('role') == '1':
         return render_template('admin.html')
     else:
         return "Access denied"
 
 
-@app.route('/admin/users')
-def users():
+@app.route('/adminusers')
+def adminusers():
+    print(session)
     if session.get('role') == '1':
         with open(USER_FILE, 'r') as file:
             lines = file.readlines()[1:]
@@ -282,6 +357,7 @@ def users():
         return render_template('users.html', users_data=users_json)
     else:
         return "Access denied"
+
 @app.route('/input_key', methods=['GET', 'POST'])
 def input_key():
     if request.method == 'POST':
@@ -289,7 +365,13 @@ def input_key():
         return redirect('/home')
     return render_template('input_key.html')
 
+@app.route('/key', methods=['GET', 'POST'])
+def key():
+    return None
 
+@app.route('/savemessage', methods=['GET', 'POST'])
+def savemessage():
+    return None
 @app.route('/auth/check')
 def check_auth():
     if 'logged_in' in session and session['logged_in'] and 'role' in session and session['role'] == 1:
@@ -310,6 +392,7 @@ def remove_user(user_id):
         return "User deleted successfully"
     else:
         return "Access denied"
+    
 @app.route('/user/<int:user_id>')
 def user_profile(user_id):
     if session.get('role') == '1':

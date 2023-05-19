@@ -209,7 +209,11 @@ def signup():
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
-
+        file_path = 'c.txt'
+        
+        with open(file_path, 'r') as file:
+            first_line = file.readline()
+        c = int(first_line)
         with open(USER_FILE, 'r') as f:
             lines = f.readlines()
             for line in lines[1:]:  # Skip the header line
@@ -223,11 +227,13 @@ def signup():
 
         # Append user data to the file
         with open(USER_FILE, 'a') as f:
-            user_id = len(lines) - 1  # Number of lines excluding the header
+            user_id = c  # Number of lines excluding the header
             role = 3
             new_user = f"\n{user_id},{username},{email},{role},{password}"
             f.write(new_user)
-
+        c+=1
+        with open(file_path, 'w') as file:
+            file.write(str(c))
         return redirect(url_for('login'))
 
     else:
@@ -278,15 +284,14 @@ def logout():
 def home():
     if 'logged_in' not in session:
         return redirect(url_for('login'))
-    #print('home')
     if 'userkey' in session:
-        print("session key:"+session['userkey'])
+        #print("session key:"+session['userkey'])
         keyfilename = 'userAppData/userkey/' + session['user_id'] + '.key'
-        print(keyfilename)
+        #print(keyfilename)
         with open(keyfilename, 'w') as file:
             ekey = derive_key(session['userkey'], salt)
             ekey = base64.b64encode(ekey).decode('utf-8')
-            print("ekey:" +ekey)
+            #print("ekey:" +ekey)
             file.write(ekey)
             ekey = base64.b64decode(ekey)
             
@@ -294,10 +299,9 @@ def home():
     else: 
         print("Session key not found")
         return redirect('/input_key')
-    print(session)
     filename ='userAppData/' + session['user_id'] + '.json'
     chatlog = read_chatlog(filename, ekey)
-    print(chatlog)    
+    #print(chatlog)    
     #print(filename)
     #print(type(chatlog))
     return render_template('home.html', chatlog=chatlog, username=session['username'], user_id=session['user_id'])
@@ -306,22 +310,22 @@ def home():
 @app.route("/ask",  methods=['GET', 'POST'])
 @cross_origin(supports_credentials=True)
 def ask():
-    print(faq)
+    #print(faq)
     user_message = request.json.get('userInput')
     user_id = request.json.get('user_id')
     if user_id == None:
         filename = 'userAppData/dump.json'
     else:
         filename ='userAppData/' + user_id + '.json'
-    print(session)
+    #print(session)
 
     #keyfile part
     keyfilename = 'userAppData/userkey/' + str(user_id) + '.key'
     with open(keyfilename, 'r') as file:
         userkey = ekey = base64.b64decode(file.readline().strip())
     file.close()
-    print("userkey:")
-    print(userkey)
+    #print("userkey:")
+    #print(userkey)
 
     print("saving to")
     print(filename)
@@ -348,7 +352,6 @@ def ask():
         "timestamp": time.time()
         },
     ]
-    print(msg)
     json_string = json.dumps(msg)
     with open(filename, 'a') as f:
         f.write(json_string)
@@ -367,7 +370,7 @@ def get_id():
 
 @app.route('/admin')
 def admin():
-    print(session)
+    #print(session)
     if session.get('role') == '1':
         return redirect('/adminusers')
     else:
@@ -549,6 +552,6 @@ def edituser(user_id):
         return redirect(url)
     
 #encrypt_file(USER_FILE, serverkey)
-decrypt_file(USER_FILE, serverkey)
+#decrypt_file(USER_FILE, serverkey)
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)

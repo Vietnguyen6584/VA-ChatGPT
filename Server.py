@@ -6,8 +6,8 @@ import os
 import re
 import json
 import time
-import csv
 import ast
+import csv
 from pathlib import Path
 from flask_cors import CORS, cross_origin
 from flask_socketio import join_room, emit, SocketIO, leave_room
@@ -17,8 +17,14 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import base64
 from cryptography.hazmat.primitives import padding
 from io import StringIO
+#for checking faq
+import string
+import nltk
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-
+nltk.download('punkt')
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
 #app.config['SESSION_COOKIE_NAME'] = 'my_session_id'
@@ -78,12 +84,38 @@ def before_request():
     else: 
         print("Session key not foundaaaaaaa")
 
-def check_faq(user_input):
-    for question, answer in faq.items():
-        if re.search(question, user_input, re.IGNORECASE):
-            return answer
-    return None
+# Preprocess and clean the text
+def preprocess_text(text):
+    text = text.lower()
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    stop_words = set(stopwords.words('english'))
+    tokens = nltk.word_tokenize(text)
+    tokens = [word for word in tokens if word not in stop_words]
 
+    text = ' '.join(tokens)
+    return text
+
+# Initialize the TF-IDF vectorizer
+vectorizer = TfidfVectorizer(tokenizer=nltk.word_tokenize, stop_words='english')
+
+def check_faq(user_input):
+    user_input = preprocess_text(user_input)
+    
+    faq_questions = [preprocess_text(question) for question in faq.keys()]
+    
+    faq_question_vectors = vectorizer.fit_transform(faq_questions)
+    
+    user_input_vector = vectorizer.transform([user_input])
+    
+    similarities = cosine_similarity(user_input_vector, faq_question_vectors)
+    most_similar_index = similarities.argmax()
+    
+    threshold = 0.5
+    
+    if similarities[0][most_similar_index] >= threshold:
+        return list(faq.values())[most_similar_index]
+    else:
+        return None
 
 def read_chatlog(filename, userkey):
     with open(filename, 'r') as f:
@@ -154,8 +186,6 @@ def decrypt_message(encrypted_message, key):
 
         # Remove padding from the decrypted message
         unpadded_message = unpadder.update(decrypted_message) + unpadder.finalize()
-
-        # Return the decrypted message as a string
         return unpadded_message.decode()
     except ValueError as e:
         # Padding error occurred
@@ -385,8 +415,6 @@ def import_faq():
             faq_data[row[0]] = row[1]
     faq.update(faq_data)
     export_faq_data(FAQfile, faq_data)
-    # Do something with the imported FAQ data
-    # For example, you can store it in a database or update an existing FAQ dictionary
 
     return redirect('/datamanage')
 
@@ -532,6 +560,6 @@ def edituser(user_id):
         return redirect(url)
     
 #import faq from file   
-#faq = import_faq_data("faq.csv")
+faq = import_faq_data("faq.csv")
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)

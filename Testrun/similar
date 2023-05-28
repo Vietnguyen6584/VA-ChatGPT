@@ -1,0 +1,44 @@
+import re
+import string
+import nltk
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Preprocess and clean the text
+def preprocess_text(text):
+    # Convert to lowercase
+    text = text.lower()
+    # Remove punctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = nltk.word_tokenize(text)
+    tokens = [word for word in tokens if word not in stop_words]
+    # Join the tokens back into a string
+    text = ' '.join(tokens)
+    return text
+
+# Initialize the TF-IDF vectorizer
+vectorizer = TfidfVectorizer(tokenizer=nltk.word_tokenize, stop_words='english')
+
+def check_faq(user_input):
+    # Preprocess and clean user input
+    user_input = preprocess_text(user_input)
+    # Preprocess and clean the FAQ questions
+    faq_questions = [preprocess_text(question) for question in faq.keys()]
+    # Create TF-IDF matrix for FAQ questions
+    faq_question_vectors = vectorizer.fit_transform(faq_questions)
+    # Create TF-IDF vector for user input
+    user_input_vector = vectorizer.transform([user_input])
+    # Calculate cosine similarities between user input vector and FAQ question vectors
+    similarities = cosine_similarity(user_input_vector, faq_question_vectors)
+    # Find the most similar FAQ question
+    most_similar_index = similarities.argmax()
+    # Threshold for considering a match
+    threshold = 0.5
+    if similarities[0][most_similar_index] >= threshold:
+        # Retrieve the corresponding answer
+        return list(faq.values())[most_similar_index]
+    else:
+        return None

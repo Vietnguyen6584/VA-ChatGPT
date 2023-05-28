@@ -117,39 +117,39 @@
         margin-top: 20px;
       }
       .chatlog-list {
-    list-style: none;
-    padding: 0; 
-    margin-top: 20px;
-    text-align: center;
-  }
+        list-style: none;
+        padding: 0; 
+        margin-top: 20px;
+        text-align: center;
+      }
 
-  .chatlog-item {
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    padding: 10px;
-    background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
+      .chatlog-item {
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
 
-  .chatlog-sender {
-    font-weight: bold;
-    color: #0652c0;
-  }
+      .chatlog-sender {
+        font-weight: bold;
+        color: #0652c0;
+      }
 
-  .chatlog-text {
-    margin-left: 5px;
-  }
+      .chatlog-text {
+        margin-left: 5px;
+      }
 
-  .chatlog-timestamp {
-    color: #888;
-    font-size: 12px;
-  }
-  .chatlog-heading {
-  text-align: center;
-  color: #0652c0; /* Replace with the desired color */
-  margin-top: 20px; /* Adjust the margin as needed */
-  }
-  #keyForm {
+      .chatlog-timestamp {
+        color: #888;
+        font-size: 12px;
+      }
+      .chatlog-heading {
+      text-align: center;
+      color: #0652c0; /* Replace with the desired color */
+      margin-top: 20px; /* Adjust the margin as needed */
+      }
+      #keyForm {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -260,12 +260,11 @@ nav li a:hover {
             document.getElementById('userIdInput').value = userId;
             document.getElementById('keyForm').submit();
         }
-      function handleKeyPress(event) {
+        function preventFormSubmit(event) {
           if (event.keyCode === 13) {
-              event.preventDefault();
-              submitForm();
-          }
-      } 
+          event.preventDefault();
+        }
+        }
     </script>
   </head>
   <body>
@@ -348,6 +347,8 @@ nav li a:hover {
     <button class="form-submit" type="button" onclick="submitForm()">Submit</button>
   </form>
   <div id="chatlog" data-chatlog="{{ chatlog }}"></div>
+  <div class="chatlog-heading">The message only display with the correct key and won't display the next time user login</div>
+  <div class="chatlog-heading">Please use submit key for this form, do not use "Enter" key on keyboard</div>
   <div id="chatlogContainer"></div>
   
   <script>  

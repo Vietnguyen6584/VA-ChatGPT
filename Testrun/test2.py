@@ -7,7 +7,6 @@ import re
 import json
 import time
 import csv
-import ast
 from pathlib import Path
 from flask_cors import CORS, cross_origin
 from flask_socketio import join_room, emit, SocketIO, leave_room
@@ -17,6 +16,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import base64
 from cryptography.hazmat.primitives import padding
 from io import StringIO
+import cryptography
 
 
 app = Flask(__name__)
@@ -32,13 +32,16 @@ max_tokens = 1024
 temperature = 0.5
 top_p = 1
 
+
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
+#files, keys and necessary variable.
+serverkey = b'\x1duQ,\x92m\\:\x80\xadCEZF\xf8\x85L\xbf\xaa\xacp\xa9`\xc5B\xa1\xceRhT\xf6O'
 USER_FILE = 'userAppData/user.txt'
 chatfile = open('userAppData/dump.json', 'w+')
 filename = 'userAppData/dump.json'
 FAQfile = 'FAQ.csv'
+
 #salt use to generate key 
 salt = b'\xf8nHCf\xec\xf9V\x0c0\xf1\xc6 \xe5r '
 
@@ -48,6 +51,8 @@ faq = {
     "What payment methods do you accept?": "We accept ...",
     "Hello": "Hello, how will i help you ?",
 }
+
+#functions
 def process_faq_to_json(faq):
     processed_faq = []
     for question, answer in faq.items():
@@ -83,7 +88,7 @@ def check_faq(user_input):
         if re.search(question, user_input, re.IGNORECASE):
             return answer
     return None
-
+import ast
 
 def read_chatlog(filename, userkey):
     with open(filename, 'r') as f:
@@ -161,6 +166,23 @@ def decrypt_message(encrypted_message, key):
         # Padding error occurred
         print("Padding error:", str(e))
         return "Unknown message (Key error)"
+    
+from cryptography.fernet import Fernet
+
+def encrypt_file(file_path, key):
+    with open(file_path, 'r') as file:
+        data = file.read()
+    encrypted_data = encrypt_message(data, key).hex()
+    with open(file_path, 'w') as encrypted_file:
+        encrypted_file.write(encrypted_data)
+    return file_path
+
+def decrypt_file(file_path, key):
+    with open(file_path, 'r') as encrypted_file:
+        encrypted_data = encrypted_file.read()
+    decrypted_data = decrypt_message(bytes.fromhex(encrypted_data), key)
+    return decrypted_data
+
 def generate_response(user_input):
     faq_answer = check_faq(user_input)
     if faq_answer:
@@ -176,7 +198,7 @@ def generate_response(user_input):
             top_p=top_p
         )
         return response.choices[0].text.strip()
-
+#Server route
 @app.route('/')
 @cross_origin(supports_credentials=True)
 def index():
@@ -192,7 +214,11 @@ def signup():
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
-
+        file_path = 'c.txt'
+        
+        with open(file_path, 'r') as file:
+            first_line = file.readline()
+        c = int(first_line)
         with open(USER_FILE, 'r') as f:
             lines = f.readlines()
             for line in lines[1:]:  # Skip the header line
@@ -206,11 +232,13 @@ def signup():
 
         # Append user data to the file
         with open(USER_FILE, 'a') as f:
-            user_id = len(lines) - 1  # Number of lines excluding the header
+            user_id = c  # Number of lines excluding the header
             role = 3
             new_user = f"\n{user_id},{username},{email},{role},{password}"
             f.write(new_user)
-
+        c+=1
+        with open(file_path, 'w') as file:
+            file.write(str(c))
         return redirect(url_for('login'))
 
     else:
@@ -261,15 +289,14 @@ def logout():
 def home():
     if 'logged_in' not in session:
         return redirect(url_for('login'))
-    #print('home')
     if 'userkey' in session:
-        print("session key:"+session['userkey'])
+        #print("session key:"+session['userkey'])
         keyfilename = 'userAppData/userkey/' + session['user_id'] + '.key'
-        print(keyfilename)
+        #print(keyfilename)
         with open(keyfilename, 'w') as file:
             ekey = derive_key(session['userkey'], salt)
             ekey = base64.b64encode(ekey).decode('utf-8')
-            print("ekey:" +ekey)
+            #print("ekey:" +ekey)
             file.write(ekey)
             ekey = base64.b64decode(ekey)
             
@@ -277,10 +304,9 @@ def home():
     else: 
         print("Session key not found")
         return redirect('/input_key')
-    print(session)
     filename ='userAppData/' + session['user_id'] + '.json'
     chatlog = read_chatlog(filename, ekey)
-    print(chatlog)    
+    #print(chatlog)    
     #print(filename)
     #print(type(chatlog))
     return render_template('home.html', chatlog=chatlog, username=session['username'], user_id=session['user_id'])
@@ -289,22 +315,22 @@ def home():
 @app.route("/ask",  methods=['GET', 'POST'])
 @cross_origin(supports_credentials=True)
 def ask():
-    print(faq)
+    #print(faq)
     user_message = request.json.get('userInput')
     user_id = request.json.get('user_id')
     if user_id == None:
         filename = 'userAppData/dump.json'
     else:
         filename ='userAppData/' + user_id + '.json'
-    print(session)
+    #print(session)
 
     #keyfile part
     keyfilename = 'userAppData/userkey/' + str(user_id) + '.key'
     with open(keyfilename, 'r') as file:
         userkey = ekey = base64.b64decode(file.readline().strip())
     file.close()
-    print("userkey:")
-    print(userkey)
+    #print("userkey:")
+    #print(userkey)
 
     print("saving to")
     print(filename)
@@ -331,7 +357,6 @@ def ask():
         "timestamp": time.time()
         },
     ]
-    print(msg)
     json_string = json.dumps(msg)
     with open(filename, 'a') as f:
         f.write(json_string)
@@ -350,7 +375,7 @@ def get_id():
 
 @app.route('/admin')
 def admin():
-    print(session)
+    #print(session)
     if session.get('role') == '1':
         return redirect('/adminusers')
     else:
@@ -368,6 +393,7 @@ def datamanage():
 @app.route('/importfaq', methods=['POST'])
 def import_faq():
     # Check if a file was uploaded
+    #print(requests.files)
     if 'faqFile' not in request.files:
         return 'No file uploaded'
 
@@ -385,8 +411,6 @@ def import_faq():
             faq_data[row[0]] = row[1]
     faq.update(faq_data)
     export_faq_data(FAQfile, faq_data)
-    # Do something with the imported FAQ data
-    # For example, you can store it in a database or update an existing FAQ dictionary
 
     return redirect('/datamanage')
 
@@ -398,7 +422,6 @@ def export_faq():
     for key, value in faq.items():
         writer.writerow([key, value])
     
-    # Create a response with the CSV data and headers for file download
     response = make_response(csv_data.getvalue())
     response.headers['Content-Disposition'] = 'attachment; filename=faq_data.csv'
     response.headers['Content-Type'] = 'text/csv'
@@ -424,10 +447,7 @@ def adminusers():
                 #'password': user_data[4]
             }
             users.append(user)
-        # Convert list of dictionaries to JSON
         users_json = json.dumps(users)
-        #print(users_json)
-        # Render the template and pass the JSON data to it
         return render_template('users.html', users_data=users_json, username=session['username'])
     else:
         return "Access denied"
@@ -531,7 +551,7 @@ def edituser(user_id):
         url = "http://localhost:5000/user/" + str(user_id)
         return redirect(url)
     
-#import faq from file   
-#faq = import_faq_data("faq.csv")
+#encrypt_file(USER_FILE, serverkey)
+#decrypt_file(USER_FILE, serverkey)
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)
